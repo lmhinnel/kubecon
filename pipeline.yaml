@@ -1,0 +1,77 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: buildpacks-test-pipeline
+spec:
+  params:
+    - name: git-url
+      type: string
+      description: URL of the project to git clone
+    - name: source-subpath
+      type: string
+      description: The subpath within the git project
+    - name: git-revision
+      type: string
+      description: "The revision to checkout when cloning the git repository (default: 'main')"
+      default: "main"
+    - name: image
+      type: string
+      description: image URL to push
+    - name: builder
+      type: string
+      description: builder image URL
+    - name: env-vars
+      type: array
+      description: env vars to pass to the lifecycle binaries
+  workspaces:
+    - name: source-workspace # Directory where application source is located. (REQUIRED)
+  tasks:
+    - name: fetch-repository # This task fetches a repository from github, using the `git-clone` task you installed
+      taskRef:
+        resolver: http
+        params:
+          - name: url
+            value: https://raw.githubusercontent.com/tektoncd/catalog/refs/heads/main/task/git-clone/0.9/git-clone.yaml
+      workspaces:
+        - name: output
+          workspace: source-workspace
+      params:
+        - name: url
+          value: "$(params.git-url)"
+        - name: revision
+          value: "$(params.git-revision)" 
+        - name: deleteExisting
+          value: "true"
+    - name: buildpacks # This task uses the `buildpacks phases` task to build the application
+      taskRef:
+        name: buildpacks-phases
+      runAfter:
+        - fetch-repository
+      workspaces:
+        - name: source
+          workspace: source-workspace
+      params:
+        - name: APP_IMAGE
+          value: "$(params.image)"
+        - name: SOURCE_SUBPATH
+          value: "$(params.source-subpath)"
+        - name: CNB_BUILDER_IMAGE
+          value: "$(params.builder)"
+        - name: CNB_ENV_VARS
+          value: "$(params.env-vars[*])"
+    - name: display-results
+      runAfter:
+        - buildpacks
+      taskSpec:
+        steps:
+          - name: print
+            image: docker.io/library/bash:5.1.4@sha256:b208215a4655538be652b2769d82e576bc4d0a2bb132144c060efc5be8c3f5d6
+            script: |
+              #!/usr/bin/env bash
+              set -e
+              echo "Digest of created app image: $(params.DIGEST)"
+        params:
+          - name: DIGEST
+      params:
+        - name: DIGEST
+          value: $(tasks.buildpacks.results.APP_IMAGE_DIGEST)

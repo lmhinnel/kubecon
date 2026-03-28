@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flappy
+  labels:
+    app: flappy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flappy
+  template:
+    metadata:
+      labels:
+        app: flappy
+    spec:
+      containers:
+      - name: flappy
+        image: lmhinnel/flappy:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flappy
+spec:
+  selector:
+    app: flappy
+  ports:
+    - port: 80
+      targetPort: 3000
+      nodePort: 30080
+  type: NodePort
+---

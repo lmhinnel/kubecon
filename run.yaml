@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: buildpacks-source-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 500Mi
+---
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: buildpacks-test-pipeline-run
+spec:
+  taskRunTemplate:
+    serviceAccountName: buildpacks-service-account
+  pipelineRef:
+    name: buildpacks-test-pipeline
+  workspaces:
+    - name: source-workspace
+      subPath: source
+      persistentVolumeClaim:
+        claimName: buildpacks-source-pvc
+  params:
+    - name: git-url
+      value: git@github.com:lmhinnel/kubecon.git
+    - name: source-subpath
+      value: "flappy"
+    - name: git-revision
+      value: 2026-1
+    - name: builder
+      value: paketobuildpacks/ubuntu-noble-builder
+    - name: image
+      value: index.docker.io/lmhinnel/flappy
+    - name: env-vars
+      value:
+        - "APP=flappy"
+
