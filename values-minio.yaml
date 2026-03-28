@@ -1,0 +1,55 @@
+resources:
+  requests:
+    memory: 512Mi
+replicas: 1
+persistence:
+  enabled: false
+mode: standalone
+rootUser: admin
+rootPassword: password123
+environment:
+  MINIO_REGION: eu-central-1
+  MINIO_IDENTITY_OPENID_CONFIG_URL: "http://cloud.local/dex/.well-known/openid-configuration"
+  MINIO_IDENTITY_OPENID_CLIENT_ID: "minio-client"
+  MINIO_IDENTITY_OPENID_CLIENT_SECRET: "minio-secret"
+  MINIO_IDENTITY_OPENID_CLAIM_NAME: "groups"
+  MINIO_IDENTITY_OPENID_SCOPES: "openid,profile,email,groups"
+  
+  # MINIO_IDENTITY_OPENID_REDIRECT_URI: "http://minio-console.default.svc.cluster.local:9001/oauth_callback"
+  MINIO_IDENTITY_OPENID_REDIRECT_URI: "http://ui-minio.local/oauth_callback"
+  MINIO_POLICY_PLUGIN_URL: "http://cloud.local/adapter/validate"
+  MINIO_SERVER_URL: http://minio.local
+  MINIO_BROWSER_REDIRECT_URL: http://ui-minio.local
+svcaccts:
+  - accessKey: minio123
+    secretKey: minio123
+    user: console
+    policy:
+      statements:
+        - resources:
+            - "arn:aws:s3:::*/*"
+          actions:
+            - "s3:*"
+
+image:
+  repository: minio/minio
+  tag: RELEASE.2023-05-18T00-05-36Z
+  pullPolicy: IfNotPresent
+
+mcImage:
+  repository: minio/mc
+  tag: RELEASE.2023-05-18T16-59-00Z
+  pullPolicy: IfNotPresent
+
+# buckets:
+#   - name: bucket1
+#     policy: public
+#     versioning: true
+
+service:
+  type: ClusterIP
+  port: "9000"
+
+consoleService:
+  type: ClusterIP
+  port: "9001"

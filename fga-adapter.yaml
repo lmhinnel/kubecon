@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fga-adapter
+  labels:
+    app: fga-adapter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fga-adapter
+  template:
+    metadata:
+      labels:
+        app: fga-adapter
+    spec:
+      containers:
+      - name: adapter
+        image: docker.io/lmhinnel/fga-adapter:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: FGA_API_URL
+          value: "http://cloud.local/fga"
+        - name: FGA_STORE_ID
+          value: "01KMTV40183M9215QGZV7H7V2D"
+        - name: FGA_MODEL_ID
+          value: "01KMTVCM30VNKJ24BG2AB387VP"
+        - name: PORT
+          value: "8080"
+        - name: MINIO_ROOT_USER
+          value: "admin"
+        - name: DEBUG
+          value: "true"
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fga-adapter
+spec:
+  selector:
+    app: fga-adapter
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP

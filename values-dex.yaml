@@ -1,0 +1,45 @@
+image:
+  tag: v2.45.0
+
+config:
+  issuer: http://cloud.local/dex
+
+  storage:
+    type: memory
+
+  web:
+    http: 0.0.0.0:5556
+
+  staticClients:
+    - id: openfga-client
+      name: 'OpenFGA'
+      secret: openfga-secret
+      redirectURIs:
+      - 'http://cloud.local/fga/callback'
+    - id: minio-client
+      name: 'MinIO'
+      secret: minio-secret
+      redirectURIs:
+      - 'http://ui-minio.local/oauth_callback'
+  enablePasswordDB: true
+  oauth2:
+    passwordConnector: local
+    
+  staticPasswords:
+    - email: admin@example.com
+      hash: "$2a$12$KoQ0vT8SGaiLX/zJQ1I0sunjpVu5x/tVNGN5t7Lw6k8GWui0DSp/G" # bcrypt
+      username: admin
+      userID: "1"
+      groups:
+      - "consoleAdmin"
+      preferred_username: "admin"
+    - email: "staff@example.com"
+      hash: "$2a$12$KoQ0vT8SGaiLX/zJQ1I0sunjpVu5x/tVNGN5t7Lw6k8GWui0DSp/G" # password123
+      username: "staff"
+      userID: "2"
+      groups: 
+      - "consoleAdmin"
+      preferred_username: "staff"
+
+service:
+  type: ClusterIP

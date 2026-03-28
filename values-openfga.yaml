@@ -1,0 +1,7 @@
+replicaCount: 1
+datastore:
+  engine: postgres
+  uri: "postgres://postgres:password@postgres-postgresql.default.svc.cluster.local:5432/openfga?sslmode=disable"
+
+playground:
+  enabled: false
