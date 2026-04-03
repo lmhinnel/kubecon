@@ -1,0 +1,29 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: flappy
+spec:
+  template:
+    spec:
+      containers:
+      - image: lmhinnel/flappy:__TAG__
+        volumeMounts:
+          - name: pvc-volume
+            mountPath: /data
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+      volumes:
+        - name: pvc-volume
+          persistentVolumeClaim:
+            claimName: my-pvc
+      

@@ -423,7 +423,7 @@ function flap() {
 }
 
 document.addEventListener('keydown', e => {
-  if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); flap(); }
+  if (e.code === 'Space') { e.preventDefault(); flap(); }
 });
 canvas.addEventListener('click', flap);
 canvas.addEventListener('touchstart', e => { e.preventDefault(); flap(); }, { passive: false });
