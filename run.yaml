@@ -32,10 +32,16 @@ spec:
     - name: git-revision
       value: 2026-1
     - name: builder
-      value: paketobuildpacks/ubuntu-noble-builder
+      value: paketobuildpacks/builder-jammy-full:0.3.613
     - name: image
-      value: index.docker.io/lmhinnel/flappy
+      value: index.docker.io/lmhinnel/flappy:v1.0.0
     - name: env-vars
       value:
         - "APP=flappy"
-
+        - "PORT=3000"
+    - name: knative-service-name
+      value: "flappy"
+    - name: deploy-namespace
+      value: "default"
+    - name: knative-manifest-path
+      value: "https://raw.githubusercontent.com/lmhinnel/kubecon/refs/heads/2026-1/knative-service.yaml"

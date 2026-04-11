@@ -1,3 +1,4 @@
+---
 apiVersion: tekton.dev/v1
 kind: Pipeline
 metadata:
@@ -23,8 +24,23 @@ spec:
     - name: env-vars
       type: array
       description: env vars to pass to the lifecycle binaries
+    - name: knative-service-name
+      type: string
+      description: Name of the Knative Service to create or update
+      default: "hello"
+    - name: deploy-namespace
+      type: string
+      description: Kubernetes namespace to deploy the Knative Service into
+      default: "default"
+    - name: knative-manifest-path
+      type: string
+      description: >-
+        Path inside the source workspace to the Knative Service YAML file
+        containing the __TAG__ placeholder
   workspaces:
-    - name: source-workspace # Directory where application source is located. (REQUIRED)
+    - name: source-workspace   # Directory where application source is located. (REQUIRED)
+    - name: kubeconfig         # Optional kubeconfig for deploy step (uses in-cluster SA if not bound)
+      optional: true
   tasks:
     - name: fetch-repository # This task fetches a repository from github, using the `git-clone` task you installed
       taskRef:
@@ -75,3 +91,24 @@ spec:
       params:
         - name: DIGEST
           value: $(tasks.buildpacks.results.APP_IMAGE_DIGEST)
+    - name: deploy-knative-serving
+      taskRef:
+        name: deploy-knative-serving
+      runAfter:
+        - buildpacks
+      workspaces:
+        - name: source
+          workspace: source-workspace
+        - name: kubeconfig         # optional — omit if using in-cluster SA
+          workspace: kubeconfig
+      params:
+        - name: APP_IMAGE
+          value: "$(params.image)"
+        - name: APP_IMAGE_DIGEST
+          value: "$(tasks.buildpacks.results.APP_IMAGE_DIGEST)"
+        - name: KNATIVE_SERVICE_NAME
+          value: "$(params.knative-service-name)"
+        - name: NAMESPACE
+          value: "$(params.deploy-namespace)"
+        - name: MANIFEST_PATH
+          value: "$(params.knative-manifest-path)"

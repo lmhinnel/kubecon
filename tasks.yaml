@@ -487,3 +487,125 @@ spec:
       emptyDir: {}
     - name: platform-dir
       emptyDir: {}
+---
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: deploy-knative-serving
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/categories: Deployment
+    tekton.dev/pipelines.minVersion: "0.62.0"
+    tekton.dev/tags: deploy, knative, serving
+    tekton.dev/displayName: "Deploy to Knative Serving"
+    tekton.dev/platforms: "linux/amd64"
+spec:
+  description: >-
+    Deploys a container image to Knative Serving by applying a Knative Service
+    manifest. Replaces the __TAG__ placeholder in the manifest with the actual
+    image reference (or digest), then uses kubectl to create-or-update the
+    Knative Service in the target namespace.
+
+  params:
+    - name: APP_IMAGE
+      description: Full image name (registry/repo/name) without tag or digest.
+    - name: APP_IMAGE_DIGEST
+      description: >-
+        Digest of the built image produced by the buildpacks task
+        (e.g. sha256:abc123…). Used to pin the exact image that was built.
+    - name: KNATIVE_SERVICE_NAME
+      description: Name of the Knative Service to create or update.
+      default: "hello"
+    - name: NAMESPACE
+      description: Kubernetes namespace to deploy into.
+      default: "default"
+    - name: MANIFEST_PATH
+      description: >-
+        Path inside the source workspace to the Knative Service YAML file.
+        The file must contain the __TAG__ placeholder which will be replaced
+        by APP_IMAGE@APP_IMAGE_DIGEST.
+      default: "deploy/knative-service.yaml"
+    - name: KUBECTL_IMAGE
+      description: Image that provides kubectl.
+      default: "bitnami/kubectl:1.30@sha256:5b1b3b8b7e4fd2a6ae6e5c8db3ad3e9e4f5b3c7b3b7b3b7b3b7b3b7b3b7b3b7b"
+
+  workspaces:
+    - name: source
+      description: >-
+        The workspace that contains the application source, including the
+        Knative Service manifest at MANIFEST_PATH.
+    - name: kubeconfig
+      description: >-
+        Optional workspace that provides a kubeconfig file
+        (mounted at kubeconfig/config) for authenticating against the cluster.
+        If not bound, the in-cluster service-account token is used.
+      optional: true
+
+  results:
+    - name: KNATIVE_SERVICE_URL
+      description: The URL of the deployed Knative Service.
+
+  steps:
+    - name: substitute-and-deploy
+      image: rancher/kubectl:v1.35.0
+      env:
+        - name: APP_IMAGE
+          value: $(params.APP_IMAGE)
+        - name: APP_IMAGE_DIGEST
+          value: $(params.APP_IMAGE_DIGEST)
+        - name: KNATIVE_SERVICE_NAME
+          value: $(params.KNATIVE_SERVICE_NAME)
+        - name: NAMESPACE
+          value: $(params.NAMESPACE)
+        - name: MANIFEST_PATH
+          value: $(params.MANIFEST_PATH)
+      script: |
+        #!/usr/bin/env bash
+        set -eu
+
+        # Prefer digest pinning (APP_IMAGE@sha256:…) so the exact artifact
+        # built by the buildpacks task is always deployed.
+        if [[ -n "${APP_IMAGE_DIGEST}" ]]; then
+          FULL_IMAGE="${APP_IMAGE}@${APP_IMAGE_DIGEST}"
+        else
+          FULL_IMAGE="${APP_IMAGE}"
+        fi
+        echo "Image to deploy: ${FULL_IMAGE}"
+
+        MANIFEST="${MANIFEST_PATH}"
+        if [[ ! -f "${MANIFEST}" ]]; then
+          echo "ERROR: Manifest not found at ${MANIFEST}"
+          exit 1
+        fi
+
+        RENDERED="/tmp/knative-service-rendered.yaml"
+        sed "s|__TAG__|${FULL_IMAGE}|g" "${MANIFEST}" > "${RENDERED}"
+
+        echo "---- Rendered manifest ----"
+        cat "${RENDERED}"
+        echo "---------------------------"
+
+        if [[ "$(workspaces.kubeconfig.bound)" == "true" ]]; then
+          export KUBECONFIG="$(workspaces.kubeconfig.path)/config"
+          echo "Using kubeconfig from workspace: ${KUBECONFIG}"
+        fi
+
+        echo "Applying Knative Service '${KNATIVE_SERVICE_NAME}' in namespace '${NAMESPACE}'..."
+        kubectl apply \
+          --namespace "${NAMESPACE}" \
+          --filename "${RENDERED}"
+
+        echo "Waiting for Knative Service to become Ready..."
+        kubectl wait ksvc "${KNATIVE_SERVICE_NAME}" \
+          --namespace "${NAMESPACE}" \
+          --for=condition=Ready \
+          --timeout=300s
+
+        URL=$(kubectl get ksvc "${KNATIVE_SERVICE_NAME}" \
+          --namespace "${NAMESPACE}" \
+          -o jsonpath='{.status.url}')
+
+        echo "Knative Service URL: ${URL}"
+        echo -n "${URL}" > "$(results.KNATIVE_SERVICE_URL.path)"
+        
