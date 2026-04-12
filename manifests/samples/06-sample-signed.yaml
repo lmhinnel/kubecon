@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flappy
+  labels:
+    app: flappy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: flappy
+  template:
+    metadata:
+      labels:
+        app: flappy
+    spec:
+      containers:
+      - name: flappy
+        image: core.harbor.domain/library/lmhinnel/flappy
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: flappy
+spec:
+  selector:
+    app: flappy
+  ports:
+    - port: 80
+      targetPort: 3000
+      nodePort: 30080
+  type: NodePort
+---

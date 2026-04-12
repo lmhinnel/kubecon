@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alpine-go22
+  labels:
+    app: alpine-go22
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alpine-go22
+  template:
+    metadata:
+      labels:
+        app: alpine-go22
+    spec:
+      containers:
+      - name: alpine-go22
+        image: core.harbor.domain/library/golang:1.22-alpine
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"

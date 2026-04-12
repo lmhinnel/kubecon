@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: harbor-webhook-signer
+  namespace: harbor-webhook
+  labels:
+    app: harbor-webhook-signer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: harbor-webhook-signer
+  template:
+    metadata:
+      labels:
+        app: harbor-webhook-signer
+    spec:
+      serviceAccountName: harbor-webhook-signer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: signer
+          image: docker.io/lmhinnel/harbor-webhook
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: harbor-webhook-config
+          env:
+            - name: COSIGN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cosign-key
+                  key: cosign.password
+            - name: WEBHOOK_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: webhook-secret
+                  key: token
+            - name: REGISTRY_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: registry-credentials
+                  key: username
+            - name: REGISTRY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: registry-credentials
+                  key: password
+
+          volumeMounts:
+            - name: cosign-key-vol
+              mountPath: /keys
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 15
+
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+
+      volumes:
+        - name: cosign-key-vol
+          secret:
+            secretName: cosign-key
+            items:
+              - key: cosign.key
+                path: cosign.key
+                mode: 0400
+        - name: tmp
+          emptyDir: {}

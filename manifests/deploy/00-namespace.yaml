@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: harbor-webhook
+  labels:
+    app.kubernetes.io/name: harbor-webhook-signer
+    app.kubernetes.io/component: security

@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: harbor-webhook-signer
+  namespace: harbor-webhook
+  labels:
+    app: harbor-webhook-signer
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: harbor-webhook-signer
+  namespace: harbor-webhook
+  labels:
+    app: harbor-webhook-signer
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get"]
+    resourceNames: ["cosign-key"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: harbor-webhook-signer
+  namespace: harbor-webhook
+  labels:
+    app: harbor-webhook-signer
+subjects:
+  - kind: ServiceAccount
+    name: harbor-webhook-signer
+    namespace: harbor-webhook
+roleRef:
+  kind: Role
+  apiGroup: rbac.authorization.k8s.io
+  name: harbor-webhook-signer
