@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app-ns
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: basic-auth-app-cluster
+  namespace: app-ns
+data:
+  auth: YXBwLWNsdXN0ZXI6JGFwcjEkdnlRNWFuRlgkRnIwN0VFdGV3L3V6UUM2NEZlNmloLwo=
+type: Opaque

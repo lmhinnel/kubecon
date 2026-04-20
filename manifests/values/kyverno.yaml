@@ -1,0 +1,16 @@
+features:
+  registryClient:
+    allowInsecure: true
+backgroundController:
+  enabled: false
+cleanupController:
+  enabled: false
+reportsController:
+  enabled: false
+admissionController:
+  container:
+    image:
+      registry: docker.io
+      repository: lmhinnel/kyverno
+      tag: v1.17.1
+      pullPolicy: Always

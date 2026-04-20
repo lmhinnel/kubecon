@@ -4,13 +4,9 @@ name: meo
 networking:
   ipFamily: dual
   apiServerPort: 8012
+  apiServerAddress: "172.17.0.1"
 nodes:
   - role: control-plane
-    image: kindest/node:v1.34.3
-    extraMounts:
-      - hostPath: /var/run/docker.sock
-        containerPath: /var/run/docker.sock
-  - role: worker
     image: kindest/node:v1.34.3
     extraMounts:
       - hostPath: /var/run/docker.sock

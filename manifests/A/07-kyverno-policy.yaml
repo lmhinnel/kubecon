@@ -1,6 +1,9 @@
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
 metadata:
+  annotations:
+    policies.kyverno.io/cluster-namespace: "app-ns"
+    policies.kyverno.io/cluster-name: "app-cluster"
   name: verify-image
 spec:
   webhookConfiguration:

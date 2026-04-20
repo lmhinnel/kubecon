@@ -1,0 +1,72 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: kyverno-resource-validating-webhook-cfg
+  labels:
+    webhook.kyverno.io/managed-by: kyverno
+webhooks:
+- name: validate.kyverno.svc-fail
+  clientConfig:
+    url: https://kyverno.webhook.com/app-ns/app-cluster/validate
+    caBundle: >-
+      LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURQVENDQWlXZ0F3SUJBZ0lVZUt2aE4xaE00S0N6TVBmSXR2WUp4Z3lyUitvd0RRWUpLb1pJaHZjTkFRRUwKQlFBd0hqRWNNQm9HQTFVRUF3d1RhM2wyWlhKdWJ5NTNaV0pvYjI5ckxtTnZiVEFlRncweU5qQTBNVFV3TVRNegpNVEZhRncweU56QTBNVFV3TVRNek1URmFNQjR4SERBYUJnTlZCQU1NRTJ0NWRtVnlibTh1ZDJWaWFHOXZheTVqCmIyMHdnZ0VpTUEwR0NTcUdTSWIzRFFFQkFRVUFBNElCRHdBd2dnRUtBb0lCQVFET0tVazRKM1ZXRGlWYzM4emEKUUFoMFlvUUZvcWpndjlieVJsVjlUZ2h0QnFxd3BKMW1qa2gwN0ZZcjZ0RnNvTEVQYnY4b3dDYURZSmdUZ01XMApDY0oxQXBkazVmdlkyeVJtRGt2VHlZMjljaWtPZ0V2bXYyZStSczFnUTU4TzU4M29Pa2RjQ09keFQrVERMaGJqCnRNdlV1Y091VjQ0V0lyVFJadVRkQys3Z0g5eXdpaEovc1huN2ltcFNOWjJUNjlLNkRtLy9kSkNFNDZWNWdra2cKR3B5Z1M0U1dxTkwzVnhORlV3dDRwY0M2cVNNaWtoYW1CT1ZnVFEzL3pnT2V1TWxUWG02cXA4YnpNYlF0eDZxdwpxVmxTbjRkNjEzRmFQSmp3Z0dtczI2MDZVR3F4R09ReXVVY0RlNkJlYVozOWJwbW1jREQ5VDR2eDY0U3I2Ull6ClZQSnBBZ01CQUFHamN6QnhNQjBHQTFVZERnUVdCQlRoNG5MNUJoZWNGYzlWQnBndFpob0NOT3pBZ2pBZkJnTlYKSFNNRUdEQVdnQlRoNG5MNUJoZWNGYzlWQnBndFpob0NOT3pBZ2pBUEJnTlZIUk1CQWY4RUJUQURBUUgvTUI0RwpBMVVkRVFRWE1CV0NFMnQ1ZG1WeWJtOHVkMlZpYUc5dmF5NWpiMjB3RFFZSktvWklodmNOQVFFTEJRQURnZ0VCCkFFRWxYbVFwRG04b1dhNTA5cjRpemtKd0c0WWU0UEt1Rktab3BPVEw3T0FQZUpYMlhyU0tuaGVMTzJmK1BpczIKcXFySWk3WTVaZlF0UGp0S3VPdFB1ZFR6TENBdFlDZlBWdVhhUzBjck1acXY0YzJ3bnZ4NkhIRStodk9nRFVicApORG8xMEY5anlnMlk0cng4a0VqTENCVHhxYW9EelN2ZmdFOC9pbkM1VTNyOXRBeDFvVlBxNEIzOFQzcWduVnNOCnBzQXhVT3ZTODlKZjlzVzdrS0Iyalp2Q1NPdGxlbk5kdEg3Zm5FbmlDNHhjRG1OWUNrWGJua2NYcEhDYVI5OUYKVi9WNG5xK0FwanZMOXFGOGdBK3VjTzBEUG00c1krTm80d296MzJiK0tJYW5qMzZlL1JZTkV5cVZwVzlqOHVPdQpLL0lHSTI1MkYwUHpIR2lLbTJKd3JqOD0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+  rules:
+  - operations:
+    - CONNECT
+    - CREATE
+    - DELETE
+    - UPDATE
+    apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    resources:
+    - pods
+    - pods/ephemeralcontainers
+    - replicationcontrollers
+    scope: Namespaced
+  - operations:
+    - CONNECT
+    - CREATE
+    - DELETE
+    - UPDATE
+    apiGroups:
+    - apps
+    apiVersions:
+    - v1
+    resources:
+    - daemonsets
+    - deployments
+    - replicasets
+    - statefulsets
+    scope: Namespaced
+  - operations:
+    - CONNECT
+    - CREATE
+    - DELETE
+    - UPDATE
+    apiGroups:
+    - batch
+    apiVersions:
+    - v1
+    resources:
+    - cronjobs
+    - jobs
+    scope: Namespaced
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  namespaceSelector:
+    matchExpressions:
+    - key: kubernetes.io/metadata.name
+      operator: NotIn
+      values:
+      - kube-system
+    - key: kubernetes.io/metadata.name
+      operator: NotIn
+      values:
+      - app-ns
+  objectSelector: {}
+  sideEffects: NoneOnDryRun
+  timeoutSeconds: 30
+  admissionReviewVersions:
+  - v1
